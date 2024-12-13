@@ -1,19 +1,21 @@
 # currently this will only generate finite fields of the form Z/pZ
 # in the future other finite fields can be considered
-
 import math
+from optparse import Option
 import random
 from decimal import Decimal, getcontext
 
+# finite field Z/pZ, creates a field with order p
 class Ffield:
-    def __init__(self, p: int) -> None:
+    # constructor, gets the next prime number greater than the input
+    # raises to the power
+    def __init__(self, p: int, key: int) -> None:
         # if p is 0, treat the field as integers
         if p == 0:
             self.order = 0
             self.elems = set([])
             return
         self.elems = set([])
-        # get the next (or same) largest prime
         n = p
         is_prime = False
         while not is_prime:
@@ -24,8 +26,12 @@ class Ffield:
                     break
             if not is_prime:
                 n += 1
-        for i in range(n):
-            self.elems.add(i)
+        q = 1
+        while math.pow(p, q) < key:
+            q += 1
+        n = math.pow(p, q)
+        # for i in range(n):
+        #     self.elems.add(i)
         self.order = n
     
     def get_class(self, n):
@@ -47,9 +53,11 @@ class Ffield:
         if self.order == 0:
             return temp
         return temp % self.order
+    def inv(self, a):
+        pass
     
     def print_field(self):
-        print("Field elements: " + str(self.elems))
+        #print("Field elements: " + str(self.elems))
         print("Field order: " + str(self.order))
 
 # represents an n degree polynomial in F[x] as a vector of coefficients
@@ -61,7 +69,7 @@ class Polynomial:
         self.deg = deg
         for i in range(deg):
             if ffield.order == 0:
-                c = random.randint(0, 1000)
+                c = random.randint(0, 100000)
                 self.coeff.append(c)
             else:
                 c = random.randint(0, ffield.order - 1)
@@ -74,19 +82,19 @@ class Polynomial:
         for i in range(k):
             y = 0
             if self.field.order == 0:
-                x = random.randint(1, 2 * self.deg)
+                x = random.randint(1, 2 * k)
             else:
                 x = random.randint(1, self.field.order - 1)
             while x in x_vals:
                 if self.field.order == 0:
-                    x = random.randint(1, 2 * self.deg)
+                    x = random.randint(1, 2 * k)
                 else:
                     x = random.randint(1, self.field.order - 1)
             for j in range(len(self.coeff)):
                 if self.field.order == 0:
-                    y += (self.coeff[j] * self.field.pow(x, j))
+                    y += (self.coeff[j] * int(self.field.pow(x, j)))
                 else:
-                    y += (self.coeff[j] * self.field.pow(x, j)) % self.field.order
+                    y += (self.coeff[j] * int(self.field.pow(x, j))) % self.field.order
             self.shares.append((x, y))
             x_vals.append(x)
     def print_shares(self):
@@ -95,7 +103,7 @@ class Polynomial:
     def print_poly(self):
         print(self.coeff)
     def compute_lagrange_constant(self, share, shares):
-        getcontext().prec = 1000
+        getcontext().prec = int(1000)
         others = []
         for s in shares:
             if s != share:
@@ -105,24 +113,14 @@ class Polynomial:
         for s in others:
             c *= Decimal(-s[0])
             denom *= (share[0] - s[0])
-        return Decimal((c * share[1]) / denom)
-    def compute_secret(self, shares: list):
+        return Decimal((c * share[1]) / denom, getcontext())
+    def compute_secret(self, shares):
         if len(shares) < self.deg + 1:
             print("Insufficient number of shares")
             return
-        c = 0
+        c = Decimal(0)
         for s in shares:
             # compute lagrange
-            c += Decimal(self.compute_lagrange_constant(s, shares))
-        c = int(c + Decimal(0.5))
+            c += Decimal(self.compute_lagrange_constant(s, shares), getcontext())
+        c = int(c + Decimal(0.5, getcontext()))
         return c
-
-
-field = Ffield(0)
-poly = Polynomial(69, 100, field)
-poly.generate_shares(101)
-poly.print_shares()
-poly.print_poly()
-
-c = poly.compute_secret(poly.shares)
-print(str(c))
