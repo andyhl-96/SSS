@@ -1,4 +1,4 @@
-# SSS -- Simple Shared Secret
+# SuSSS -- Super Secret Shared Secret
 
 An implementation of Shamir's secret sharing for some simple practical purposes.
 
