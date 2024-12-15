@@ -26,7 +26,7 @@ def main():
         fernet1 = Fernet(key)
         # encrypt the file contents and write ciphertext to file
         C = fernet1.encrypt(contents.encode())
-        outfile = open("secret.sss", "w")
+        outfile = open("../out/secret.susss", "w")
         outfile.write(C.decode() + "\n")
 
         # prompt for number of shares to generate

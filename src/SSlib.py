@@ -1,7 +1,6 @@
 # currently this will only generate finite fields of the form Z/pZ
 # in the future other finite fields can be considered
 import math
-from optparse import Option
 import random
 from decimal import Decimal, getcontext
 
@@ -54,7 +53,9 @@ class Ffield:
             return temp
         return temp % self.order
     def inv(self, a):
-        pass
+        if self.order == 0:
+            return Decimal(Decimal(1) / Decimal(a))
+        return (self.order + 1) // a
     
     def print_field(self):
         #print("Field elements: " + str(self.elems))
@@ -91,10 +92,7 @@ class Polynomial:
                 else:
                     x = random.randint(1, self.field.order - 1)
             for j in range(len(self.coeff)):
-                if self.field.order == 0:
-                    y += (self.coeff[j] * int(self.field.pow(x, j)))
-                else:
-                    y += (self.coeff[j] * int(self.field.pow(x, j))) % self.field.order
+                    y += (self.field.mult(self.coeff[j], int(self.field.pow(x, j))))
             self.shares.append((x, y))
             x_vals.append(x)
     def print_shares(self):
@@ -113,7 +111,7 @@ class Polynomial:
         for s in others:
             c *= Decimal(-s[0])
             denom *= (share[0] - s[0])
-        return Decimal((c * share[1]) / denom, getcontext())
+        return Decimal(self.field.mult(self.field.mult(c, share[1]), self.field.inv(denom)), getcontext())
     def compute_secret(self, shares):
         if len(shares) < self.deg + 1:
             print("Insufficient number of shares")
